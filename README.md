@@ -1,23 +1,41 @@
 # Objectives:
 This project is a proof-of-concept if 
 logs from a docker container output can be captured in a reliable way using 
-adobe log parser.
+adobe log parser ('com.adobe.campaign.tests:log-parser:1.11.2')
 
-The user stories involved are:
+
+The actors:
+
+* An operator watches a running solution, checking inbound and outbound data, and make quick inspections
+  about the application health.
+* A solution developer uses a third party framework to develop custom tailored solutions for specific
+  customer use cases. Examples, collect data from service now and send to kafka. Operators may invoke solution developers
+  when they find issues with the solution.
+* A framework developer maintains the third party framework the solution developer uses.
+* The data owner owns 
+
+The use cases:
 
 * UC0001 As an operator I want to filter out any message that is not relevant to the general application health:
-  I don't want to see initialization options, etc: I want to see which records were processed with success,
+  I don't want to see initialization options, etc.: I want to see which records were processed with success,
   which failed, and any big ugly errors I see there.
 * UC0002 As a solution developer, when the operator say they have an issue with record X, 
-  I want to be able to track the detailed history of that record, to understand why there was an issue, 
+  I want to be able to track the detailed history around the time of that record, to understand why there was an issue, 
   and at which process step.
 * UC0003 As a solution developer, when I'm testing a solution, I want to see if there are any issues with the 
   configuration during startup.
 * UC0004 As the framework developer, I need to see all logs in detail, to help diagnose issues.
-* UC0005 As the framework developer, I must be able to collect logs specific to a third party solution (open-telemetry) to 
-  send to the community for support.
+* UC0005 As the framework developer, I must be able to collect logs specific to a third party solution my framework 
+  depends on.
+* UC0006 As any role, I may collect huge amounts of data in heterogeneous formats, and I want to be able to filter 
+  that data by date and further data qualifiers. 
+  * For example, in a log4j2 log we would have log level, thread and category.
+  * For a typical http access log we would have a method (GET/POST/PUT, etc) a status code remote ip and local url.
+* UC0007 As the data owner I demand that sensitive data in general is not generally disclosed, except on the specific 
+  cases I authorize it, and for as short a time as possible.
 
-The challenge in a typical container log output is that, if a mix of
+
+The challenge in a typical java tomcat container log output is that, if a mix of
 shellscript, accessory apps and a web container is used,
 the log output will be widely inconsistent: some echo commands, mixed with
 raw utilities output, mixed with tomcat output,
@@ -106,3 +124,14 @@ The challenges:
   with a multiline log from the main application, for example.
 * Applications running in a multithreaded environment may have logs belonging to different 
   records intertwined. Due to UC0002, I should be able to collect only logs belonging to that thread.
+
+UPDATE:
+=======
+
+After careful considerations, I've considered the adobe log parser solution unfit for our purposes:
+
+1) It assumes homogeneous data in single line entities.
+2) It keeps all findings in memory.
+3) The parsed relies on the presence of specific separators: with heterogeneous formats, the separators may change.
+
+These two reasons makes it unfit for UC0006: huge heterogeneous data content.
