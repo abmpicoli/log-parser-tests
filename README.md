@@ -135,3 +135,57 @@ After careful considerations, I've considered the adobe log parser solution unfi
 3) The parsed relies on the presence of specific separators: with heterogeneous formats, the separators may change.
 
 These two reasons makes it unfit for UC0006: huge heterogeneous data content.
+
+Thinking my own architecture:
+=============================
+
+A log line is composed of a header + fields + content.
+
+Once a header is found, a tokenizer should find syntax aspects in an abstract syntax tree, until parsing is no longer found,
+to find fields. When the syntax no longer applies, the content is actual message contents, until another header is found.
+
+Using a minor variant of w3c notation https://www.w3.org/TR/REC-xml/#sec-notation
+
+Extra notation:
+
+? <<comment>> ?  : the notation for a human-readable parse specification
+
+`>>capture=fieldname <<` specifies a capture field 
+
+Example:
+
+`2025-02-13 18:44:20,617 ou=the_ou_keyDEV_oauth_basic_DETAILED TOMCAT INFO  [ main | o.a.c.s.VersionLoggerListener ] Server version name:   Apache Tomcat/9.0.99`
+
+The header would be 
+
+`newline ::= (? start of a file ?) | (\n|\r|\n\r)`
+
+`digit ::= [0-9]`
+`wordchar ::= (\w|.|-|_|$)+`
+`date ::= digit{4}-digit{2}-digit{2}`
+`time ::= ' ' digit{2} ':' digit{2} ':' digit{2}`
+`millis ::= [.,]digit+`
+`timestamp ::= >>capture=timestamp date time millis? <<`
+`header ::= newline timestamp`
+
+The fields would be
+
+`oudef ::= 'ou=' wordchar`
+`spc ::= ' '+`
+`field ::= spc oudef spc appname spc loglevel spc threadcategory spc`
+
+`appname ::= >>capture=app wordchar<<`
+`loglevel ::= >>capture=level wordchar<<`
+`threadcategory ::= '[' spc >>capture=thread wordchar << spc '|' spc >>capture=category<< wordchar spc ']'`
+
+
+
+`>>> 2025-02-13 18:44:11.000 ou=the_ou_keyDEV_oauth_basic_DETAILED Adjusting permissions`
+
+the header would be
+
+header ::= newline '>>>' spc timestamp  
+
+TODO
+
+
